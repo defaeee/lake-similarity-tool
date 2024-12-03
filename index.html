@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Outil de Similarité des Lacs</title>
+<style>
+        * {
+            font-family: 'AvenirNext', sans-serif;
+            font-size: 14px; /* Changement de la taille de la police à 14 */
+        }
+        h1 {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        .mb-3 {
+            margin-bottom: 1rem;
+        }
+</style>
+</head>
+<body>
+<div class="widget-lake-similarity">
+<h1 class="mb-4">Outil de Similarité des Lacs</h1>
+<p>Indiquer la superficie (ha) et la profondeur moyenne (m) du lac d'intérêt :</p>
+<div class="mb-3">
+<label for="superficie" class="form-label">Superficie (ha) :</label>
+<input type="number" id="superficie" class="form-control" name="superficie">
+</div>
+<div class="mb-3">
+<label for="profondeur" class="form-label">Profondeur moyenne (m) :</label>
+<input type="number" id="profondeur" class="form-control" name="profondeur">
+</div>
+<button onclick="calculateSimilarity()" class="btn btn-primary">Calculer Similarité</button>
+<div id="result" class="mt-3"></div>
+</div>
+<script>
+        window.calculateSimilarity = function() {
+            var superficie = parseFloat(document.getElementById('superficie').value);
+            var profondeur = parseFloat(document.getElementById('profondeur').value);
+            if (isNaN(superficie) || isNaN(profondeur)) {
+                document.getElementById('result').innerHTML = 'Veuillez entrer des valeurs numériques valides.';
+                return;
+            }
+            var lacsmod = [
+                [13.40348, 6.82], [30.60218, 12.18], [50.787, 7.63], [83.32935, 2.16],
+                [125.02914, 7.32], [366.41746, 12.36], [1215.19919, 50.76], [1256.6, 22.34],
+                [2444.8387, 13.65], [5108.09639, 2.41], [21305.6877, 8.93]
+            ];
+            var nvlac = [superficie, profondeur];
+            lacsmod.push(nvlac);
+            var data_mean = [0, 0];
+            var data_std = [0, 0];
+            for (var i = 0; i < lacsmod[0].length; i++) {
+                var sum = 0;
+                for (var j = 0; j < lacsmod.length; j++) {
+                    sum += lacsmod[j][i];
+                }
+                data_mean[i] = sum / lacsmod.length;
+                var variance = 0;
+                for (var j = 0; j < lacsmod.length; j++) {
+                    variance += Math.pow(lacsmod[j][i] - data_mean[i], 2);
+                }
+                data_std[i] = Math.sqrt(variance / lacsmod.length);
+            }
+            var normalized_data = [];
+            for (var i = 0; i < lacsmod.length; i++) {
+                normalized_data[i] = [
+                    (lacsmod[i][0] - data_mean[0]) / data_std[0],
+                    (lacsmod[i][1] - data_mean[1]) / data_std[1]
+                ];
+            }
+            function euclideanDistance(a, b) {
+                return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+            }
+            var distances = [];
+            for (var i = 0; i < normalized_data.length; i++) {
+                distances[i] = [];
+                for (var j = 0; j < normalized_data.length; j++) {
+                    distances[i][j] = euclideanDistance(normalized_data[i], normalized_data[j]);
+                }
+            }
+            var similarity = [];
+            for (var i = 0; i < distances.length; i++) {
+                similarity[i] = [];
+                for (var j = 0; j < distances[i].length; j++) {
+                    similarity[i][j] = 1 / (1 + distances[i][j]);
+                }
+            }
+            for (var i = 0; i < similarity.length; i++) {
+                similarity[i] = similarity[i].slice(0, 11);
+            }
+            var maxValues = [];
+            var colIndices = [];
+            for (var i = 0; i < similarity.length; i++) {
+                var maxVal = Math.max(...similarity[i]);
+                maxValues.push(maxVal);
+                colIndices.push(similarity[i].indexOf(maxVal));
+            }
+            var laccor = colIndices[11];
+            var valmax = maxValues[11];
+            var laccorstr = '';
+            switch (laccor) {
+                case 0: laccorstr = 'N⁰1'; break;
+                case 1: laccorstr = 'N⁰2'; break;
+                case 2: laccorstr = 'N⁰3'; break;
+                case 3: laccorstr = 'N⁰4'; break;
+                case 4: laccorstr = 'N⁰5'; break;
+                case 5: laccorstr = 'N⁰6'; break;
+                case 6: laccorstr = 'N⁰7'; break;
+                case 7: laccorstr = 'N⁰8'; break;
+                case 8: laccorstr = 'N⁰9'; break;
+                case 9: laccorstr = 'N⁰10'; break;
+                case 10: laccorstr = 'N⁰11'; break;
+            }
+            document.getElementById('result').innerHTML = 
+                '<div class="alert alert-success mt-3">' +
+                '<p><strong>Valeurs maximales de similarité :</strong> ' + valmax.toFixed(6) + '</p>' +
+                '<p><strong>Lac modélisé le plus similaire :</strong> ' + laccorstr + '</p>' +
+                '</div>';
+        }
+</script>
+</body>
+</html>
